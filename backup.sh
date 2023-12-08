@@ -1,162 +1,121 @@
-# Replace these placeholders with actual values
+# Firstly we will provide all the path of local as well as remote
 
-GITHUB_REPO="https://github.com/PurushotamSharma/Purushotam.github.io.git"
+# We have to create a script for a project  that is  hosted on the Github , so we need the github repo link for that we create one variable that store the github repo link
 
-LOCAL_REPO="/home/purushotam/Enacton_Task/GitHub_Project_New"
+repo="https://github.com/PurushotamSharma/Purushotam.github.io.git"
 
-BACKUP_FOLDER="/home/purushotam/Enacton_Task/Backup"
+# Now we have to create one folder that store the github code for the backup
 
-GOOGLE_DRIVE_REMOTE_NAME="gdrive"  # Replace with your actual rclone remote name
+local_folder="/home/purushotam/DevOps/Task/Github_Project"
 
-GOOGLE_DRIVE_FOLDER_ID="Backup"
+# for storing the Backup zip file we have to create one backup folder 
 
-ROTATIONAL_BACKUP_COUNT=7
+backup="/home/purushotam/DevOps/Task/Backup"
 
-CURL_URL="https://webhook.site/895161ca-5e11-4458-8329-5dda9c2483a4"
+# for push the code to gdrive we will be using the rclone server
 
+rclone_server="gdrive"
 
+# give the name to gdrive folder that store your all backup files
 
-# Function to clone the GitHub repository
+gdrive_folder="Backup"
 
-clone_github_repo() {
+# for the rotational backup we have to give the argument as a variable , for this script i will be giving as 7
 
-    git clone "${GITHUB_REPO}" "${LOCAL_REPO}"
+rotational_count=7
 
-}
+# for output and notification we will be using the curl url from webhook site
 
+curl_url="https://webhook.site/895161ca-5e11-4458-8329-5dda9c2483a4"
 
+enable_curl=true  # Set to false to disable cURL request for testing
 
-# Function to create a backup
+# For clonning the github repo we have to create onne function
 
-create_backup() {
-
-    TIMESTAMP=$(date +"%Y%m%d%H%M%S")
-
-    BACKUP_NAME="backup_${TIMESTAMP}.zip"
-
-    zip -r "${BACKUP_FOLDER}/${BACKUP_NAME}" "${LOCAL_REPO}"
-
-}
-
-
-
-# Function to push backup to Google Drive using rclone with retry
-
-push_to_google_drive() {
-
-    MAX_RETRIES=3
-
-    RETRY_COUNT=0
-
-
-
-    while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-
-        rclone -v copy "${BACKUP_FOLDER}/${BACKUP_NAME}" "${GOOGLE_DRIVE_REMOTE_NAME}:${GOOGLE_DRIVE_FOLDER_ID}/"
-
-
-
-        # Check if the previous rclone command was successful
-
-        if [ $? -eq 0 ]; then
-
-            break  # Exit the loop if successful
-
-        else
-
-            RETRY_COUNT=$((RETRY_COUNT + 1))
-
-            sleep 60  # Wait for 60 seconds before retrying
-
-        fi
-
-    done
+github_clone(){
+    # after git clone command we give the source and after that we will have the destination
+    git clone "${repo}" "${local_folder}"
 
 }
 
+# now we declare the backup function
 
+backup() {
+    # for the backup folder name we will use timestamp 
+    timestamp=$(date +"%Y%m%d-%H%M%S")
 
-# Function to perform rotational backup
+    backup_name="backup(date +"%Y%m%d-%H%M%S").zip"
 
-rotational_backup() {
+    # here we create the zip archive
+    zip -r "${backup}/${backup_name}"  "${local_folder}"
+}
+  
+  # we also have create function  to push the backup to the gdrive for that we will be using the rclone server
 
-    # Find and delete backups older than 1 minute locally
+push(){
 
-    find "${BACKUP_FOLDER}" -type f -name "backup_*.zip" -mmin +1 -exec rm -f {} \;
+    rclone -v copy "${backup}/${backup_name}" "${rclone_server}:${gdrive_folder}"
+}
+  # for rotational backup we have to create one function
+   
+   rotational_backup() {
+     # Keep the last 7 daily backups locally
+    find "${backup}" -type f -name "backup_*.zip" -mtime -7 | xargs -I {} mv {} "${backup}"
 
+    # Keep the last 4 backups of Sundays (weekly)
+    find "${backup}" -type f -name "backup_*.zip" -mtime -28 -exec date -d {} '+%u' \; | grep '^7' | xargs -I {} mv "${backup}/backup_{}.zip" "${backup}"
 
+    # Keep the last 3 monthly backups
+    find "${backup}" -type f -name "backup_*.zip" -mtime -91 | xargs -I {} mv {} "${backup}"
 
-    # Delete older backups from Google Drive using rclone
+    # Delete older backups beyond the specified retention periods locally (with --dry-run for testing)
+    if [ "${enable_curl}" = true ]; then
+        find "${backup}" -type f -name "backup_*.zip" ! -mtime -91 -exec rm -f {} \;
+        # Delete older backups beyond the specified retention periods on Google Drive (with --dry-run for testing)
+        rclone delete "${rclone_server}:${gdrive_folder}" --min-age 91 --max-depth 1
+    else
+        echo "Dry run: Older backups not deleted locally and on Google Drive."
+    fi
+   }
 
-    rclone delete "${GOOGLE_DRIVE_REMOTE_NAME}:${GOOGLE_DRIVE_FOLDER_ID}" --min-age 1m --max-depth 1
-
-
-
-    # Keep the last 'ROTATIONAL_BACKUP_COUNT' backups locally
-
-    find "${BACKUP_FOLDER}" -type f -name "backup_*.zip" | sort -r | tail -n +$ROTATIONAL_BACKUP_COUNT | xargs rm -f
-
+   # Function to send cURL request on successful backup
+curl_request() {
+    if [ "${enable_curl}" = true ]; then
+        curl -X POST -H "Content-Type: application/json" -d '{"project": "Automated Backup and Rotation Script", "date": "'"${timestamp}"'", "test": "Backup_Successful"}' "${curl_url}"
+    else
+        echo "Dry run: cURL request not sent."
+    fi
 }
 
+# Function to log backup 
 
+log_backup() {
 
-# Function to send cURL request on successful backup
-
-send_curl_request() {
-
-    curl -X POST -H "Content-Type: application/json" -d '{"project": "Automated Backup and Rotation Script", "date": "'"${TIMESTAMP}"'", "test": "BackupSuccessful"}' "${CURL_URL}"
+    echo "Backup successful for project: $(basename ${local_folder}), Date: $(date)" >> "${backup}/backup_log.txt"
 
 }
-
-
-
-# Function to log backup information
-
-log_backup_info() {
-
-    echo "Backup successful for project: $(basename ${LOCAL_REPO}), Date: $(date)" >> "${BACKUP_FOLDER}/backup_log.txt"
-
-}
-
-
-
-
 
 # Main script
-
 echo "Starting backup process..."
-
-
 
 # Step 1: Clone the GitHub repository
 
-clone_github_repo
-
-
+github_clone
 
 # Step 2: Create a backup
 
-create_backup
-
-
+backup
 
 # Step 3: Push backup to Google Drive using rclone
 
-push_to_google_drive
-
-
+push
 
 # Step 4: Perform rotational backup
 
 rotational_backup
 
-
-
 # Step 5: Send cURL request on successful backup
 
- send_curl_request
-
-
+curl_request
 
 echo "Backup process completed."
-
