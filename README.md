@@ -66,17 +66,14 @@ Here are step by step guide:
    ```bash
      rclone config
     ```
-   ![WhatsApp Image 2023-12-08 at 23 50 10_1441a0d7](https://github.com/PurushotamSharma/Automated-Backup-and-Rotation-Script/assets/107574991/0c521b94-3bff-43c2-   a4f7-0c34194b77dd)
-
-   Currently I have a one remote server because I recentaly use for this project you have to create new one by providing command n as a new server
-   
-    ![WhatsApp Image 2023-12-08 at 23 55 41_0b85d98e](https://github.com/PurushotamSharma/Automated-Backup-and-Rotation-Script/assets/107574991/ee54024b-542f-408f-a597-4215804babff)
-
-
-
   
+     After writting the rclone config you will see the  7 options you have to select second one create new server.
 
+     After clicking on the create new server name and press Enter
 
+     After that you have to choose integration tool, In our project google drive is integration tool so we will choose the google drive after that  you have to integerate with remote config by using drive account.
+
+     Congrats 🍾🎉 you completed the rclone configuration
 
 ## Usage
 
@@ -91,4 +88,45 @@ Run the script:
 ```bash
 ./backup_script.sh
 ```
+
+## Verify Backup
+
+Check your Google Drive folder for the backup files. Ensure that the rotational backup strategy is working as expected.
+
+## View Logs
+
+If you enabled logging, view the log file for details:
+
+```bash
+cat backup_log.txt
+```
+
+## Rotational Backup Strategy
+
+If needed, adjust the rotational backup strategy in the script based on your project requirements.
+
+# Output and Notification
+
+The script outputs relevant information, success/failure messages, and timestamps to the console. On successful backup, a cURL request is made to the specified endpoint (CURL_URL) with a POST request containing project name, date, and a test identifier.
+
+**Example cURL Request:**
+
+```bash
+
+curl -X POST -H "Content-Type: application/json" -d '{"project": "YourProjectName", "date": "BackupDate", "test": "BackupSuccessful"}' https://your-webhook-url
+
+```
+## Documentation
+
+For more details on configuration options, Google Drive integration, and rotational backup strategy, refer to the script documentation.
+Contributing
+
+## Contributing
+
+We welcome contributions from the community! If you'd like to contribute to the project, please follow the guidelines outlined in the Contributing Guidelines in Contribute.md file.
+
+## License
+
+This project is licensed under the MIT License.
+
 
