@@ -20,7 +20,7 @@ This script automates the backup process for a GitHub project, implementing a ro
 
 - Git
 - Google Drive CLI tool (e.g., `rclone`)
-- cURL
+- cURL (Webhook.sit)
 
 ## Installation
 
@@ -48,7 +48,7 @@ Edit the script (`backup_script.sh`) and set the following variables:
 - `GOOGLE_DRIVE_REMOTE_NAME`: Name of the rclone remote for Google Drive.
 - `GOOGLE_DRIVE_FOLDER_ID`: Google Drive folder ID to store backups.
 - `ROTATIONAL_BACKUP_COUNT`: Number of backups to retain in each category.
-- `CURL_URL`: cURL endpoint for successful backup notifications.
+- `CURL_URL`: cURL endpoint for successful backup notifications(Webhook).
 
 ## Usage
 
