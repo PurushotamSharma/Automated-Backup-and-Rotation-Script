@@ -95,14 +95,40 @@ Check your Google Drive folder for the backup files. Ensure that the rotational 
 
 ## View Logs
 
-If you enabled logging, view the log file for details:
+As we  enabled logging in our script, view the log file for details:
 
 ```bash
 cat backup_log.txt
 ```
 
 ## Rotational Backup Strategy
+A rotational backup strategy is a method of managing backup copies by retaining a set number of recent backups while systematically removing older ones. This strategy provides a balance between conserving storage space and ensuring that you have access to a sufficient history of backup data.
 
+In the context of our  script, the rotational backup strategy is implemented with the following characteristics:
+
+    Daily Backups:
+        Retains the last 'x' daily backups.
+
+    Weekly Backups:
+        Retains the last 'x' weekly backups.
+        In our  example, we specified keeping the backups of the last 4 Sundays as a weekly backup.
+
+    Monthly Backups:
+        Retains the last 'x' monthly backups.
+        In our example, we specified keeping the backups of the last 3 months.
+
+    Deletion of Older Backups:
+        Deletes backups beyond the specified retention periods.
+        The retention periods are defined by the 'x' value for daily, weekly, and monthly backups.
+
+Example (with 'x' set to 7 in our Script):
+
+    Keep the backups of the last 7 days.
+    Keep the backups of the last 4 Sundays (weekly).
+    Keep the backups of the last 3 months.
+    Delete older backups beyond the specified retention periods.
+
+This strategy ensures that we have a recent history of backups for quick recovery while gradually removing older backups to free up storage space. The 'x' value provides flexibility in customizing the number of backups retained for each period based on your specific needs.
 If needed, adjust the rotational backup strategy in the script based on your project requirements.
 
 # Output and Notification
