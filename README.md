@@ -45,10 +45,17 @@ Edit the script (`backup_script.sh`) and set the following variables:
 - `repo`: URL of the GitHub repository.
 - `local_folder`: Local path to clone the GitHub repository.
 - `backup`: Local path to store backups.
+- `backup_daily`: Local path to store daily backups.
+- `backup_weekly`: Local path to store weekly backups.
+- `backup_monthly`: Local path to store monthly  backups.
 - `rclone_server`: Name of the rclone remote for Google Drive.
 - `gdrive_folder`: Google Drive folder ID or name to store backups.
+- `gdrive_daily`: Google Drive folder ID or name to store daily backups.
+- `gdrive_weekly`: Google Drive folder ID or name to store weekly backups.
+- `gdrive_monthly`: Google Drive folder ID or name to store monthly backups.
 - `rotational_count`: Number of backups to retain in each category.
 - `curl_url`: cURL endpoint for successful backup notifications(Webhook).
+  
 
 ## What is rclone?
 Rclone is a command-line program that provides a convenient way to manage files and data on cloud storage services. It allows users to perform various operations, such as copying, syncing, and transferring files between different storage providers. Rclone supports a wide range of cloud storage systems, including Google Drive, Dropbox, Amazon S3, Microsoft OneDrive, and many others.
