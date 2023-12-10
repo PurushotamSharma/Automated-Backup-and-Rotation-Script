@@ -1,19 +1,7 @@
-# Provide all the necessary paths
-
-
-
+# Here We Provide all the paths
 repo="https://github.com/PurushotamSharma/Shell-Script-Testing.git"
-
-
-
 local_folder="/home/purushotam/Desktop/Enacton/Github"
-
-
-
 backup="/home/purushotam/Desktop/Enacton/Backup"
-
-
-
 backup_daily="$backup/daily"
 
 
@@ -68,8 +56,6 @@ enable_curl=true
 
 
 
-
-
 log_message() {
 
 
@@ -90,16 +76,6 @@ log_message() {
 
 
 
-
-
-
-
-
-
-
-
-
-
 github_clone() {
 
     
@@ -108,21 +84,25 @@ github_clone() {
 
 
 
-    daily_clone_folder="${local_folder}_${TIMESTAMP}"
+       daily_clone_folder="${local_folder}_${TIMESTAMP}"
 
-         git clone  "${repo}" "${daily_clone_folder}"
+       
+
+       git clone  "${repo}" "${daily_clone_folder}"
+
+       
 
          if [ $? -ne 0 ]; then
 
+         
+
                log_message "Error Clonning repo  ${repo}  to ${daily_clone_folder}" 
+
+               
 
             fi
 
-   
-
-    
-
-}
+  }
 
 
 
@@ -248,10 +228,6 @@ weekly_backup() {
 
 
 
-
-
-
-
 monthly_backup() {
 
 
@@ -336,13 +312,7 @@ monthly_backup() {
 
     fi
 
-
-
 }
-
-
-
-
 
 
 
@@ -384,6 +354,8 @@ push() {
 
 }
 
+
+
 rotation() {
 
 
@@ -396,41 +368,37 @@ rotation() {
 
 		backup_type_message="$4"
 
+		
+
     # Delete local rotation files
 
     find "${backup_folder}" -type f -name "backup_*.zip" -exec ls -1t {} + | awk -v threshold="${rotation_count}" 'NR>threshold' | xargs -I {} rm -f {}
 
 
 
-    # Get the list of rotation files from the remote server
+    # Get the list of rotation files from the remote server and delete it
 
     rotation_files=$(rclone ls "${rclone_server}:${gdrive_folder}" --max-depth 1 --dry-run | sort -k 6,7 -r | awk -v threshold="${rotation_count}" 'NR>threshold' | awk '{print $2}')
 
 
 
-    #echo "$rotation_files"
-
-
+    
 
     if [ -n "$rotation_files" ]; then
 
         for file in $rotation_files; do
 
-            # Attempt to delete the file
+            
 
             rclone delete "${rclone_server}:${gdrive_folder}/${file}" >> "$log_file" 2>&1
 
             
 
-            
+          
 
-
-
-            # Check the exit status of the last command
+           # Check the exit status of the last command
 
             if [ $? -ne 0 ]; then
-
-               # echo "Error deleting file: ${file}" >> "$log_file"
 
                log_message "Error deleting file: ${file}"
 
@@ -452,17 +420,7 @@ rotation() {
 
     fi
 
-
-
-    
-
 }
-
-
-
-
-
-
 
 
 
@@ -494,15 +452,11 @@ curl_request() {
 
 
 
-
-
 # Main execution
 
 
 
-
-
-log_message "Backup and Rotation Process Started."
+log_message "Backup and Rotation Process Started..."
 
 
 
@@ -522,10 +476,8 @@ monthly_backup
 
 
 
-
-
 curl_request
 
 
 
-log_message "Backup and Rotation Process Completed."
+log_message "Backup and Rotation Process Completed..."
