@@ -15,13 +15,14 @@ daily_rotation_count=7
 weekly_rotation_count=4
 monthly_rotation_count=3
 enable_curl=true 
-
+# Defining the log function
 log_message() {
 
 local message="$1"
 local timestamp=$(date +"%Y-%m-%d %H:%M:%S")
 echo "[${timestamp}] ${message}" >> "$log_file"
 }
+# Github clone function to clone the repo
 github_clone() {
 
        TIMESTAMP=$(date +"%Y%m%d%H%M%S")
@@ -31,17 +32,20 @@ github_clone() {
        log_message "Error Clonning repo  ${repo}  to ${daily_clone_folder}" 
        fi
        }
+ # calling daily backup function to create daily backups
 daily_backup() {
 
 	TIMESTAMP=$(date +"%Y%m%d%H%M%S")
          backup_name="backup_${TIMESTAMP}.zip"
         zip -r "${backup_daily}/${backup_name}" "${local_folder}"
          log_message "Daily local backup completed: ${backup_name}"
+# Calling push function to push the code to gdrive
         push "${backup_name}" "daily"
         log_message "Daily Backup push to gdrive  Completed: ${backup_name}"
+# Calling rotation function for rotation
         rotation "${backup_daily}"  "${daily_rotation_count}"  "${gdrive_daily}"     "daily"
 	}
-
+# Declaring and calling weekly function
 weekly_backup() {
        if [ "$(date +%u)" -eq 7 ]; then
        log_message "Today is Sunday. Performing weekly backup..."
@@ -50,8 +54,10 @@ weekly_backup() {
       file_name=$(basename "${latest_file}")
        cp "${latest_file}" "${backup_weekly}/${file_name}"
        log_message "Latest file '${file_name}' copied from daily to weekly folder."
+# Calling push function
        push "${file_name}" "weekly"
        log_message "Weekly Backup push to gdrive  Completed: ${file_name}"
+# Calling rotation function
        rotation "${backup_weekly}"  "${weekly_rotation_count}"  "${gdrive_weekly}"     "weekly"
        else
        log_message "No files found in the daily folder."
@@ -61,7 +67,7 @@ weekly_backup() {
        log_message "Today is not Sunday. No weekly backup needed."
        fi
 }
-
+# Declaring and calling monthly backupsfunction
 monthly_backup() {
 
        current_day=$(date +"%d")
@@ -73,8 +79,10 @@ monthly_backup() {
        log_message "Latest file in daily folder: ${latest_file}"
        cp "${backup_daily}/${latest_file}" "${backup_monthly}/"
        log_message "File copied to monthly folder:${latest_file}"
+# Calling push function
        push "${latest_file}" "monthly"
        log_message "Monthly Backup push to gdrive  Completed: ${latest_file}"
+# Calling rotation function
        rotation "${backup_monthly}"  "${monthly_rotation_count}"  "${gdrive_monthly}"     "monthly"
        else
        log_message "No files found in the daily folder."
@@ -120,7 +128,7 @@ rotation() {
       log_message "No eligible files to delete for ${backup_type_message} rotation"
       fi
       }
-
+# Defining curl request 
  curl_request() {
 
       if [ "${enable_curl}" = true ]; then
