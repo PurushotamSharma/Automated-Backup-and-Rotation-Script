@@ -62,10 +62,6 @@ monthly_rotation_count=3
 
 
 
-
-
-
-
 enable_curl=true 
 
 
@@ -102,21 +98,31 @@ log_message() {
 
 
 
+
+
 github_clone() {
 
+    
+
+       TIMESTAMP=$(date +"%Y%m%d%H%M%S")
 
 
-    git clone "${repo}" "${local_folder}"
 
+    daily_clone_folder="${local_folder}_${TIMESTAMP}"
 
+         git clone  "${repo}" "${daily_clone_folder}"
 
-    log_message "GitHub repo cloned to ${local_folder}"
+         if [ $? -ne 0 ]; then
 
+               log_message "Error Clonning repo  ${repo}  to ${daily_clone_folder}" 
 
+            fi
+
+   
+
+    
 
 }
-
-
 
 
 
@@ -138,7 +144,21 @@ daily_backup() {
 
 
 
-    log_message "Daily backup completed: ${backup_name}"
+    log_message "Daily local backup completed: ${backup_name}"
+
+    
+
+    push "${backup_name}" "daily"
+
+    
+
+    log_message "Daily Backup push to gdrive  Completed: ${backup_name}"
+
+               
+
+    
+
+    rotation "${backup_daily}"  "${daily_rotation_count}"  "${gdrive_daily}"     "daily"
 
 
 
@@ -159,8 +179,6 @@ weekly_backup() {
 
 
     if [ "$(date +%u)" -eq 7 ]; then
-
-
 
         log_message "Today is Sunday. Performing weekly backup..."
 
@@ -183,6 +201,16 @@ weekly_backup() {
 
 
             log_message "Latest file '${file_name}' copied from daily to weekly folder."
+
+             push "${file_name}" "weekly"
+
+    
+
+    	    log_message "Weekly Backup push to gdrive  Completed: ${file_name}"
+
+    	    
+
+    	    rotation "${backup_weekly}"  "${weekly_rotation_count}"  "${gdrive_weekly}"     "weekly"
 
 
 
@@ -211,6 +239,8 @@ weekly_backup() {
 
 
     fi
+
+    
 
 
 
@@ -256,9 +286,27 @@ monthly_backup() {
 
             cp "${backup_daily}/${latest_file}" "${backup_monthly}/"
 
+            
+
+            
 
 
-            log_message "File copied to monthly folder."
+
+            log_message "File copied to monthly folder:${latest_file}"
+
+            
+
+              push "${latest_file}" "monthly"
+
+    
+
+    	    log_message "Monthly Backup push to gdrive  Completed: ${latest_file}"
+
+    	    
+
+    	    
+
+    	    rotation "${backup_monthly}"  "${monthly_rotation_count}"  "${gdrive_monthly}"     "monthly"
 
 
 
@@ -274,7 +322,7 @@ monthly_backup() {
 
 
 
-        log_message "Monthly backup completed."
+        
 
 
 
@@ -282,7 +330,7 @@ monthly_backup() {
 
 
 
-        log_message "Today is not the last day of the month. Skipping monthly backup."
+       log_message "Today is not the last day of the month. Skipping monthly backup."
 
 
 
@@ -302,7 +350,7 @@ push() {
 
 
 
-   # local gdrive="$1"
+   file_name="$1"
 
 
 
@@ -314,15 +362,15 @@ push() {
 
 
 
-        daily) rclone -v copy "${backup_daily}/${backup_name}" "${rclone_server}:${gdrive_daily}" ;;
+        daily) rclone -v copy "${backup_daily}/${file_name}" "${rclone_server}:${gdrive_daily}" ;;
 
 
 
-        weekly) rclone -v copy "${backup_weekly}/${backup_name}" "${rclone_server}:${gdrive_weekly}" ;;
+        weekly) rclone -v copy "${backup_weekly}/${file_name}" "${rclone_server}:${gdrive_weekly}" ;;
 
 
 
-        monthly) rclone -v copy "${backup_monthly}/${backup_name}" "${rclone_server}:${gdrive_monthly}" ;;
+        monthly) rclone -v copy "${backup_monthly}/${file_name}" "${rclone_server}:${gdrive_monthly}" ;;
 
 
 
@@ -336,27 +384,31 @@ push() {
 
 }
 
+rotation() {
 
 
 
+		backup_folder="$1"
 
+		rotation_count="$2"
 
+		gdrive_folder="$3"
 
-daily_rotation() {
+		backup_type_message="$4"
 
     # Delete local rotation files
 
-    find "${backup_daily}" -type f -name "backup_*.zip" -exec ls -1t {} + | awk -v threshold="${daily_rotation_count}" 'NR>threshold' | xargs -I {} rm -f {}
+    find "${backup_folder}" -type f -name "backup_*.zip" -exec ls -1t {} + | awk -v threshold="${rotation_count}" 'NR>threshold' | xargs -I {} rm -f {}
 
 
 
     # Get the list of rotation files from the remote server
 
-    rotation_files=$(rclone ls "${rclone_server}:${gdrive_daily}" --max-depth 1 --dry-run | sort -k 6,7 -r | awk -v threshold="${daily_rotation_count}" 'NR>threshold' | awk '{print $2}')
+    rotation_files=$(rclone ls "${rclone_server}:${gdrive_folder}" --max-depth 1 --dry-run | sort -k 6,7 -r | awk -v threshold="${rotation_count}" 'NR>threshold' | awk '{print $2}')
 
 
 
-    echo "$rotation_files"
+    #echo "$rotation_files"
 
 
 
@@ -366,7 +418,11 @@ daily_rotation() {
 
             # Attempt to delete the file
 
-            rclone delete "${rclone_server}:${gdrive_daily}/${file}" >> "$log_file" 2>&1
+            rclone delete "${rclone_server}:${gdrive_folder}/${file}" >> "$log_file" 2>&1
+
+            
+
+            
 
 
 
@@ -374,159 +430,33 @@ daily_rotation() {
 
             if [ $? -ne 0 ]; then
 
-                echo "Error deleting file: ${file}" >> "$log_file"
+               # echo "Error deleting file: ${file}" >> "$log_file"
 
-            fi
+               log_message "Error deleting file: ${file}"
+
+            
+
+            
+
+           else
+
+              log_message "Successfully Deleted the ${backup_type_message} rotation: ${file}"
+
+           fi
 
         done
 
-    fi
+        else 
 
-
-
-    echo "Daily rotation completed."
-
-}
-
-
-
-
-
-
-
-
-
-weekly_rotation() {
-
-
-
-    log_message "Starting weekly rotation..."
-
-
-
-
-
-
-
-    # Local rotation
-
-
-
-    find "${backup_weekly}" -type f -name "backup_*.zip" -exec ls -1t {} + | awk 'NR>4' | xargs -I {} rm -f {}
-
-
-
-    log_message "Local rotation completed."
-
-
-
-
-
-
-
-    # Remote rotation
-
-
-
-rclone -v  ls "Enacton:Backup/weekly" --include "backup_*.zip"  | sort -k 6,7 -r | awk 'NR>4' | awk '{print $2}' | xargs -I {} rclone delete "Enacton:Backup/weekly"
-
-
-
-
-
-
-
-
-
-
-
-    log_message "Remote rotation completed."
-
-
-
-
-
-
-
-    log_message "Weekly rotation completed."
-
-
-
-}
-
-
-
-
-
-
-
-monthly_rotation(){
-
-
-
-
-
-
-
-    # Keep the last backups locally
-
-
-
- find "${backup}" -type f -name "backup_*.zip" | sort -r | tail -n "${monthly_rotation_count}" | xargs rm -f
-
-
-
- 
-
-
-
-  files_to_delete=$(rclone ls "${rclone_server}:${gdrive_monthly}" --include "backup_*.zip" --max-depth 1 | sort -k 6,7 -r | awk -v threshold="${monthly_rotation_count}" 'NR>threshold' | awk '{print $2}')
-
-
-
-
-
-
-
-    if [ -n "$files_to_delete" ]; then
-
-
-
-        # Delete older files
-
-
-
-        rclone delete "${rclone_server}:${files_to_delete}"
-
-
-
-        log_message "Successfully performed monthly rotation on ${rclone_server}:${remote_folder}"
-
-
-
-    else
-
-
-
-        log_message "No backup files found on ${rclone_server}:${gdrive_monthly} for rotation."
-
-
+        log_message "No eligible files to delete for ${backup_type_message} rotation"
 
     fi
 
 
 
-
-
-
-
-    log_message "Monthly rotation completed."
-
-
+    
 
 }
-
-
 
 
 
@@ -552,7 +482,7 @@ curl_request() {
 
 
 
-        echo "Dry run: cURL request not sent."
+        log_message "Dry run: cURL request not sent."
 
 
 
@@ -570,7 +500,9 @@ curl_request() {
 
 
 
-log_message "Script started."
+
+
+log_message "Backup and Rotation Process Started."
 
 
 
@@ -590,48 +522,10 @@ monthly_backup
 
 
 
-push "${gdrive_daily}" "daily"
-
-
-
-sleep 10s
-
-
-
-push "${gdrive_weekly}" "weekly"
-
-
-
-sleep 10s
-
-
-
-#push "${gdrive_monthly}" "monthly"
-
-
-
-daily_rotation
-
-
-
-sleep 10s
-
-
-
-weekly_rotation
-
-
-
-sleep 10s
-
-
-
-monthly_rotation
-
-
-
-sleep 10s
-
 
 
 curl_request
+
+
+
+log_message "Backup and Rotation Process Completed."
